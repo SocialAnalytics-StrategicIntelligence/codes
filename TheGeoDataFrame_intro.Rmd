@@ -1,0 +1,65 @@
+ 
+
+```{r}
+# import os, geopandas as gpd
+# countries=gpd.read_file(os.path.join("maps","World_Countries","World_Countries.shp"))
+rm(list = ls())
+
+library(sf)
+folder1 ="maps"
+folder2="World_Countries"
+countryFile ="World_Countries.shp"
+locationCity = file.path (folder1,folder2,countryFile)
+countries=st_read(locationCity)
+```
+```{r}
+# what is it?
+#type(countries)
+
+class(countries)
+```
+```{r}
+# dimensions
+#countries.shape
+dim(countries)
+```
+```{r}
+# names
+# countries.columns
+names(countries)
+```
+
+```{r}
+# some content
+# countries.head()
+head(countries)
+```
+```{r}
+# any missing values?
+# countries[countries.isna().any(axis=1)]
+countries[is.na(countries)]
+```
+```{r}
+# types
+# countries.info()
+str(countries)
+```
+## Basic Plotting
+
+```{r}
+library ( ggplot2 )
+ggplot(data = countries) + geom_sf() 
+
+```
+```{r}
+# rivers=gpd.read_file(os.path.join("maps","World_Hydrography","World_Hydrography.shp"))
+# cities=gpd.read_file(os.path.join("maps","World_Cities","World_Cities.shp"))
+
+riverFile ="World_Hydrography.shp"
+cityFile ="World_Cities.shp"
+locationRiver = file.path (folder1,folder2,riverFile)
+locationCity = file.path (folder1,folder2,cityFile)
+rivers=st_read(locationRiver)
+cities=st_read(locationCity)
+```
+
