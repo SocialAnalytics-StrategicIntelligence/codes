@@ -1,0 +1,36 @@
+---
+title: "My First Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+```
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Brazil Rivers and Cities
+
+```{r}
+readRDS("Brazil_all.rds")
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Brazil rivers
+
+```{r}
+readRDS("Brazil_rivers.rds")
+```
+
+### Brazil cities
+
+```{r}
+readRDS("Brazil_cities.rds")
+```
+
