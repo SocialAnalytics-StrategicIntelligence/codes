@@ -1,0 +1,292 @@
+
+<br>
+<center><img src="http://i.imgur.com/sSaOozN.png" width="500"></center>
+
+
+## Course: Computational Thinking for Governance Analytics
+
+### Prof. José Manuel Magallanes, PhD 
+
+* Visiting Professor of Computational Policy at Evans School of Public Policy and Governance, and eScience Institute Senior Data Science Fellow, University of Washington.
+* Professor of Government and Political Methodology, Pontificia Universidad Católica del Perú. 
+
+
+
+_____
+
+# Introduction to Network Analysis in R
+
+
+Plan for this session:
+
+1. [Importing Data and Building a Network](#part1) 
+2. [Exploring Network](#part2) 
+    * [Network as a whole](#part21) 
+    * [Network actors](#part22) 
+    
+3. [Exporting the Network](#part3) 
+
+The network we are going to build is based on a relationship studied in this paper:
+
+<img src="https://github.com/EvansDataScience/CTforGA_Networks/raw/main/paper.png" width="900">
+
+
+In that paper, the researcher builds a matrix of relationships among business people that are present in the board of directors of the top companies in Peru. This table represents when two people are at least members in one common board of directors:
+
+<img src="https://github.com/EvansDataScience/CTforGA_Networks/raw/main/dataRed.png" width="900">
+
+
+<a id='part1'></a>
+
+## 1. Importing Data
+
+The data was not available from the author's website, so the matrix you see above was copied and pasted to Excel:
+
+```{r, eval=TRUE, message=FALSE}
+rm(list = ls())
+library(rio)
+
+file='dataFigueroa.xlsx'
+
+adjacency=import(file)
+```
+
+This data is organized as an adjacency matrix. It should be squared:
+
+```{r, eval=TRUE, message=FALSE}
+dim(adjacency)
+```
+
+Let's take a look at the column names:
+```{r, eval=TRUE, message=FALSE}
+names(adjacency)
+```
+
+Let's move the column _Names_ as the  row names, then we will get an squared matrix:
+
+```{r, eval=TRUE, message=FALSE}
+row.names(adjacency)=adjacency$Names
+adjacency$Names=NULL
+dim(adjacency)
+```
+
+
+
+This data is currently  a _data frame_, and  has now to be converted into a **matrix**.
+
+```{r, eval=TRUE, message=FALSE}
+adjacency_Mx=as.matrix(adjacency) 
+```
+
+
+From this kind of structure (the adjacency _matrix_), we can easily create a network via **Igraph**:
+
+```{r, eval=TRUE, message=FALSE}
+library(igraph)
+
+EliteNet=graph.adjacency(adjacency_Mx,mode="undirected",weighted=NULL)
+```
+
+A network is composed of _vertices_ (aka nodes) and _edges_ that connect them. You can know how many you have of each like this:
+```{r, eval=TRUE, message=FALSE}
+vcount(EliteNet) #count of vertices
+```
+
+```{r, eval=TRUE, message=FALSE}
+ecount(EliteNet) #count of edges
+```
+
+
+
+You can take a look at how this network looks like:
+
+```{r, eval=TRUE, message=FALSE}
+plot.igraph(EliteNet,
+            vertex.color = 'yellow',
+            edge.color='lightblue')
+```
+
+Before going further, it is good to know if our network is connected (every node can reach any other node):
+
+
+```{r, eval=TRUE, message=FALSE}
+is_connected(EliteNet)
+```
+
+As we do not have ONE connected network (at least two components), we can pay attention to the Giant Component (component with max nodes):
+
+```{r}
+#library(CINNA)
+
+EliteNet_giant=CINNA::giant_component_extract(EliteNet,directed = F)[[1]]
+```
+
+
+
+Let's take a look at the Giant Component:
+
+
+```{r, eval=TRUE, message=FALSE}
+plot.igraph(EliteNet_giant)
+```
+
+Basic summary:
+
+```{r, eval=TRUE, message=FALSE}
+summary(EliteNet_giant)
+```
+You see:
+* **UN**:Undirected
+* **28**:nodes
+* **133**:edges
+
+
+We will use the giant component as our network to be explored.
+____
+
+<a id='part2'></a>
+
+## 2. Exploring the NETWORK
+
+
+<a id='part21'></a>
+
+### Exploring the Network as a whole
+
+
+* Density: from 0 to 1, where 1 makes it a 'complete' network: there is a link between every pair of nodes.
+
+<center><img src="https://cdn.fs.guides.co/PDn0ImTfSb6QwgIvdoQ8" width="500"></center>
+
+```{r, eval=TRUE, message=FALSE}
+graph.density(EliteNet_giant)
+```
+
+* Diameter: When two vertices are connected, one can reach the other using multiple egdes (routes). The geodesic is the shorthest path between two connected vertices. Then, the diameter, is the maximum geodesic in a network (the worst case scenario for number of edges for someone to contact another one only computable for connected networks).
+
+<center><img src="https://github.com/EvansDataScience/CTforGA_Networks/raw/main/diameter.jpeg" width="500"></center>
+
+
+```{r, eval=TRUE, message=FALSE}
+diameter(EliteNet_giant)
+```
+We can find out who are pair (or pairs) of nodes represent the diameter.
+```{r}
+farthest_vertices(EliteNet_giant)
+```
+
+* Shortest path (average): it gets the average of every shortest path among the nodes in the network. A shorter path is the shortest _walk_ from one node to another.
+
+
+```{r, eval=TRUE, message=FALSE}
+average.path.length(EliteNet_giant)
+```
+
+* Transitivity: How probable is that two vertices with a common vertex, are also connected.
+
+
+```{r, eval=TRUE, message=FALSE}
+transitivity(EliteNet_giant)
+```
+
+* Assortativity (degree): it is a measure to see if nodes are connecting to other nodes similar in degree.  Closer to 1 means higher assortativity, closer to -1 diassortativity; while 0 is no assortitivity.
+
+```{r, eval=TRUE, message=FALSE}
+assortativity_degree(EliteNet_giant)
+```
+Let's turn our attention to the nodes and their roles in the network.
+
+<a id='part22'></a>
+
+### Exploration of network actors
+
+Let's focus on the relevance, or _centrality_ of the vertices we have.
+
+a. The degree  of a vertex will tell you about the amount of connections of each node. A node with degree centrality of ONE (1) means that is connected to every other node. 
+b. The closeness of a vertex will tell you how close is a vertex to every other vertex. A vertex with high closeness can share information faster than the rest.
+c. The betweeness of a vertex will tell you how critical is a vertex to connect vertex that are not connected directly.
+
+d. The eigenvector of a vertex will tell you how well connected is a vertex; that is,   vertices with the highest values are considered the most influential as they are connected to vertices that are also well connected.
+
+Let me get all these centrality indexes:
+
+```{r, eval=TRUE, message=FALSE}
+rounding=3
+degr=round(degree(EliteNet_giant,normalized=T),rounding)
+close=round(closeness(EliteNet_giant,normalized=T),rounding)
+betw=round(betweenness(EliteNet_giant,normalized=T),rounding)
+eigv=round(eigen_centrality (EliteNet_giant,scale=F)$vector,rounding)
+
+DFCentrality=as.data.frame(cbind(close,betw,eigv),stringsAsFactors = F)
+names(DFCentrality)=c('Closeness','Betweenness','Eigenvector')
+```
+
+```{r, eval=TRUE, message=FALSE}
+DFCentrality$person=row.names(DFCentrality)
+row.names(DFCentrality)=NULL
+head(DFCentrality)
+```
+
+
+```{r, eval=TRUE, message=FALSE}
+library(ggplot2)
+ggplot(DFCentrality, aes(x=Betweenness, y=Closeness)) + 
+    theme_classic() +
+    geom_text(aes(label=person,color=Eigenvector)) +
+    scale_colour_gradient(low = "orange", high = "black")
+```
+
+You can clearly see who are the most important people in this network.
+
+
+Can this network be disconnected? 
+
+If so, we can compute the minimum number of nodes that must be removed to disconnect the network (create at least two components):
+
+```{r, eval=TRUE, message=FALSE}
+vertex_connectivity(EliteNet_giant)
+```
+
+
+Who is the sole node with the power to break the network?
+
+```{r, eval=TRUE, message=FALSE}
+(TheCut=articulation_points(EliteNet_giant))
+```
+
+```{r, eval=TRUE, message=FALSE}
+(TheBridge=bridges(EliteNet_giant))
+```
+
+We can highlight the _articulation node_ in the giant component:
+
+
+```{r, eval=TRUE, message=FALSE}
+allSizes=rep(10,vcount(EliteNet_giant))
+allSizes[TheCut]=40
+V(EliteNet_giant)$size=allSizes 
+plot.igraph(EliteNet_giant,layout = layout.fruchterman.reingold,
+             vertex.color = 'yellow',
+             edge.color='lightblue',vertex.shape='sphere')
+```
+```{r}
+E(EliteNet_giant)$color=ifelse(E(EliteNet_giant)==TheBridge,
+                               'red','grey80')
+                               
+plot.igraph(EliteNet_giant,layout = layout.fruchterman.reingold,
+             vertex.color = 'yellow',
+             edge.color=E(EliteNet_giant)$color,vertex.shape='sphere')
+```
+
+<a id='part3'></a>
+
+## Exporting the network
+
+This might be useful to use in another program (i.e. Gephi).
+
+```{r, eval=TRUE, message=FALSE}
+write_graph(EliteNet, "EliteNetR.graphml", "graphml")
+```
+
+
+
