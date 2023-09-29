@@ -1,0 +1,47 @@
+---
+title: "My First Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+Pagina 1
+=================
+```{r setup, include=FALSE}
+library(flexdashboard)
+```
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Mundo 1
+
+```{r}
+readRDS("choro1.rds")
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Mundo 2
+
+```{r}
+readRDS("scatter1.rds")
+```
+
+### Mundo 3
+
+```{r}
+readRDS("hist1.rds")
+```
+
+
+Pagina 2
+=================
+
+### Mundo 4
+
+```{r}
+readRDS("leaflet1.rds")
+```
